@@ -210,70 +210,70 @@ The connection between the two systems is the **Webhook node** — its URL is em
 **Step 1 — Input Form**
 *User submits their email and topic to kick off the workflow.*
 
-![Input Form](./Input_Form.png)
+![Input Form](./screenshots/Input_Form.png)
 
 ---
 
 **Step 2 — System 1: Research & Source Verification Workflow**
 *n8n canvas showing the full research and email verification pipeline.*
 
-![Research & Source Verification Workflow](./Research___Source_Verification.png)
+![Research & Source Verification Workflow](./screenshots/Research___Source_Verification.png)
 
 ---
 
 **Step 3 — Source Verification Email**
 *The user receives a formatted email listing the AI-researched sources to verify.*
 
-![Verify Email](./Verify_Email.png)
+![Verify Email](./screenshots/Verify_Email.png)
 
 ---
 
 **Step 4 — System 2: Content Generation & Automation Workflow**
 *n8n canvas showing the full content generation, approval, and publishing pipeline.*
 
-![Social Media Content Generation and Automation](./Social_Media_Content_Generation_and_Automation.png)
+![Social Media Content Generation and Automation](./screenshots/Social_Media_Content_Generation_and_Automation.png)
 
 ---
 
 **Step 5 — LinkedIn Post Approval**
 *Draft LinkedIn post sent to the user for approval before publishing.*
 
-![LinkedIn Post](./LinekedIn_Post.png)
+![LinkedIn Post](./screenshots/LinekedIn_Post.png)
 
 ---
 
 **Step 6 — Instagram Post Approval**
 *Draft Instagram post with AI-generated image, ready for approval.*
 
-![Instagram Post](./Instagram__Post.png)
+![Instagram Post](./screenshots/Instagram__Post.png)
 
 ---
 
 **Step 7 — Twitter (X) Post Approval**
 *Concise tweet draft with hashtags, sent for approval.*
 
-![Twitter Post](./Twitter__Post.png)
+![Twitter Post](./screenshots/Twitter__Post.png)
 
 ---
 
 **Step 8 — Medium Post Approval**
 *Long-form Medium article draft sent for approval.*
 
-![Medium Post](./Medium__Post.png)
+![Medium Post](./screenshots/Medium__Post.png)
 
 ---
 
 **Step 9 — Facebook Post Approval**
 *Facebook post draft with CTA and hashtags, sent for approval.*
 
-![Facebook Post](./Facebook__Post.png)
+![Facebook Post](./screenshots/Facebook__Post.png)
 
 ---
 
 **Step 10 — Slack Post Approval**
 *Internal team Slack update draft, sent for approval.*
 
-![Slack Post](./Slack_Post.png)
+![Slack Post](./screenshots/Slack_Post.png)
 
 ---
 
