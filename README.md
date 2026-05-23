@@ -217,7 +217,7 @@ The connection between the two systems is the **Webhook node** — its URL is em
 **Step 2 — System 1: Research & Source Verification Workflow**
 *n8n canvas showing the full research and email verification pipeline.*
 
-![Research & Source Verification Workflow](./screenshots/Research___Source_Verification.png)
+![Research & Source Verification Workflow](./screenshots/Research_and_Source_Verification.png)
 
 ---
 
@@ -245,28 +245,28 @@ The connection between the two systems is the **Webhook node** — its URL is em
 **Step 6 — Instagram Post Approval**
 *Draft Instagram post with AI-generated image, ready for approval.*
 
-![Instagram Post](./screenshots/Instagram__Post.png)
+![Instagram Post](./screenshots/Instagram_Post.png)
 
 ---
 
 **Step 7 — Twitter (X) Post Approval**
 *Concise tweet draft with hashtags, sent for approval.*
 
-![Twitter Post](./screenshots/Twitter__Post.png)
+![Twitter Post](./screenshots/Twitter_Post.png)
 
 ---
 
 **Step 8 — Medium Post Approval**
 *Long-form Medium article draft sent for approval.*
 
-![Medium Post](./screenshots/Medium__Post.png)
+![Medium Post](./screenshots/Medium_Post.png)
 
 ---
 
 **Step 9 — Facebook Post Approval**
 *Facebook post draft with CTA and hashtags, sent for approval.*
 
-![Facebook Post](./screenshots/Facebook__Post.png)
+![Facebook Post](./screenshots/Facebook_Post.png)
 
 ---
 
