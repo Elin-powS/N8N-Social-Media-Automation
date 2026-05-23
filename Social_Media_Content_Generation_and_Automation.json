@@ -1,0 +1,841 @@
+{
+  "name": "Social Media Content Generation and Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.query?.urls || \"\" }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are an expert content writer and researcher specialized in creating social-media-ready articles. \n\nWhen given URLs in the user message:\n1. Visit each URL and extract the most important facts, insights, or data.\n2. Summarize and combine the content from all URLs into a single coherent article.\n3. The article must be:\n   - Engaging, clear, and concise.\n   - Around 400\u2013500 words.\n   - Written in a friendly and professional tone suitable for social media.\n   - Include a compelling introduction, key points in the middle, and a conclusion or call-to-action at the end.\n4. Do not include raw URLs in the article unless necessary.\n5. Avoid adding information not present in the provided URLs.\n6. Focus on readability and social media engagement.\n\nAlways treat the user-provided URLs as the **only sources of information**."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        -2960,
+        368
+      ],
+      "id": "6e5bbdf4-25d7-4043-8815-4ab3cd4dc4d2",
+      "name": "Basic LLM Chain1"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Role: Expert Social Media Manager & JSON Content Creator.\nTask: Summarize the provided text into tailored posts for 6 platforms.\nInput Text: {{ $json.text }}\n\nPlatform Constraints:\nLinkedIn: Professional/formal; focus on business ROI and industry impact.\n\nInstagram: Catchy/conversational; includes a CTA and 2-3 hashtags.\n\nTwitter (X): Concise (under 280 chars); conversational; max 3 hashtags.\n\nMedium: Long-form blog style; structured with headers and detailed insights.\n\nFacebook: Friendly/informative; includes a CTA and hashtags.\n\nSlack: Internal team update; direct; explains \"why this matters to us.\"\n\nCRITICAL OUTPUT INSTRUCTIONS (STRICT COMPLIANCE):\nNO MARKDOWN: Do not use ```json or any other markdown backticks. Return the raw text only.\n\nNO PREAMBLE: Do not say \"Here is your JSON\" or any other introductory text.\n\nJSON ESCAPING: This is the most important rule. You must escape every internal double quote within the post content using a backslash.\n\nIncorrect: \"The \"AI Revolution\" is here\"\n\nCorrect: \"The \"AI Revolution\" is here\"\n\nNEWLINES: Represent all line breaks as the character sequence \\n. Do not use actual carriage returns/enters inside the JSON values.\n\nSTRUCTURE: Ensure the output is a single, valid JSON array.\n\nOutput Format:\n[\n{\n\"platform\": \"LinkedIn\",\n\"post\": \"Content here...\"\n},\n{\n\"platform\": \"Instagram\",\n\"post\": \"Content here...\"\n},\n{\n\"platform\": \"Twitter\",\n\"post\": \"Content here...\"\n},\n{\n\"platform\": \"Medium\",\n\"post\": \"Content here...\"\n},\n{\n\"platform\": \"Facebook\",\n\"post\": \"Content here...\"\n},\n{\n\"platform\": \"Slack\",\n\"post\": \"Content here...\"\n}\n]"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -2656,
+        368
+      ],
+      "id": "f5f54ea7-03bd-41e7-b47f-400b1720d2d7",
+      "name": "Message a model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "",
+          "name": "YOUR_GOOGLEPALMAPI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "sendTo": "={{ $json.email }}",
+        "subject": "={{ $json.subject }}",
+        "message": "={{ $json.emailHtml }}",
+        "approvalOptions": {
+          "values": {
+            "approvalType": "double"
+          }
+        },
+        "options": {
+          "appendAttribution": true
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -1152,
+        528
+      ],
+      "id": "50802597-491f-4fca-9691-3f86afc135e0",
+      "name": "Send message and wait for response",
+      "webhookId": "",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "",
+          "name": "YOUR_GMAILOAUTH2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Get all items from the merge\nconst items = $input.all();\n\n// 2. Extract the email (Search for the item that has the email property)\nconst emailItem = items.find(item => item.json.email || (item.json.type === 'metadata' && item.json.email));\nconst userEmail = emailItem ? emailItem.json.email : \"\";\n\n// 3. Extract the direct image link from the Google Drive Object\nconst driveFile = items.find(item => item.json.webContentLink);\nlet imageLink = driveFile ? driveFile.json.webContentLink : \"\";\n\n// Fail-safe: Convert download link to view link\nif (imageLink.includes('export=download')) {\n  imageLink = imageLink.replace('export=download', 'export=view');\n}\n\n// 4. Filter for the post content items\nconst postItems = items.filter(item => item.json.platform);\n\nreturn postItems.map(item => {\n  const data = item.json;\n  const platform = data.platform;\n  \n  // Styling configuration\n  const platformConfigs = {\n    'LinkedIn': { color: '#0077b5', icon: '\ud83d\udc54' },\n    'Instagram': { color: '#e4405f', icon: '\ud83d\udcf8' },\n    'Twitter': { color: '#1da1f2', icon: '\ud83d\udc26' },\n    'Medium': { color: '#00ab6c', icon: '\ud83d\udcdd' },\n    'Facebook': { color: '#1877f2', icon: '\ud83d\udc65' },\n    'Slack': { color: '#4a154b', icon: '\ud83d\udcac' }\n  };\n\n  const config = platformConfigs[platform] || { color: '#0366d6', icon: '\ud83d\udcf1' };\n  const displayPlatform = platform.charAt(0).toUpperCase() + platform.slice(1);\n  const formattedPost = (data.post || \"\").replace(/\\n/g, '<br>');\n\n  const imageHtml = imageLink ? `\n    <div style=\"margin-bottom: 25px; border-radius: 12px; overflow: hidden; border: 1px solid #edf2f7; box-shadow: 0 4px 12px rgba(0,0,0,0.08);\">\n      <img src=\"${imageLink}\" alt=\"AI Generated Visual\" style=\"width: 100%; max-width: 100%; height: auto; display: block;\" />\n    </div>\n  ` : '';\n\n  const individualHtml = `\n    <div style=\"background-color: #f0f4f8; padding: 40px 10px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;\">\n      <div style=\"max-width: 580px; margin: 0 auto; background-color: #ffffff; border-radius: 20px; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.1); border: 1px solid #e2e8f0;\">\n        <div style=\"background-color: ${config.color}; padding: 30px 20px; text-align: center;\">\n          <div style=\"font-size: 32px; margin-bottom: 8px;\">${config.icon}</div>\n          <h2 style=\"color: #ffffff; margin: 0; font-size: 22px; font-weight: 500;\">\n            ${displayPlatform} Post Content\n          </h2>\n        </div>\n        <div style=\"padding: 35px; color: #1a202c;\">\n          <div style=\"display: flex; align-items: center; margin-bottom: 18px;\">\n            <div style=\"height: 2px; flex-grow: 1; background-color: #edf2f7;\"></div>\n            <div style=\"padding: 0 15px; font-size: 12px; font-weight: 600; color: #718096; text-transform: uppercase;\">Draft Preview</div>\n            <div style=\"height: 2px; flex-grow: 1; background-color: #edf2f7;\"></div>\n          </div>\n          ${imageHtml}\n          <div style=\"background-color: #ffffff; border: 1.5px solid #edf2f7; border-radius: 12px; padding: 25px; line-height: 1.7; font-size: 16px; color: #2d3748;\">\n            ${formattedPost}\n          </div>\n        </div>\n      </div>\n    </div>\n  `;\n\n  return {\n    json: {\n      platform,\n      email: userEmail, // <--- Email added to each platform item here\n      subject: `\u2728 Ready to Post: ${displayPlatform} Content`,\n      emailHtml: individualHtml,\n      post_content : data.post,\n      imageUrl: imageLink\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1760,
+        272
+      ],
+      "id": "b270b89c-1017-40ac-8c96-86dc46e37dac",
+      "name": "Making Template for post Approval"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Access the specific path and the email from the Webhook\nconst rawData = $input.all()[0].json.content.parts[0].text;\nconst userEmail = $('Webhook').item.json.query.email || \"\"; \n\n// 2. Comprehensive Cleaning\nlet cleanedText = rawData\n  .replace(/```json/g, '') \n  .replace(/```/g, '')     \n  .trim();\n\n// 3. Fix potential trailing commas\ncleanedText = cleanedText.replace(/,\\s*([\\]}])/g, '$1');\n\nlet finalOutput = [];\n\ntry {\n  // 4. Parse the string\n  const postsArray = JSON.parse(cleanedText);\n  \n  // 5. Convert posts to n8n items\n  finalOutput = postsArray.map(post => ({ json: post }));\n\n} catch (e) {\n  // 6. Advanced Fallback\n  try {\n     const rescuedText = cleanedText.replace(/\\n/g, \"\\\\n\");\n     const rescuedArray = JSON.parse(rescuedText);\n     finalOutput = rescuedArray.map(post => ({ json: post }));\n  } catch (secondError) {\n     finalOutput = [{ \n       json: { \n         error: \"Failed to parse JSON\", \n         raw: rawData \n       } \n     }];\n  }\n}\n\n// 7. APPEND THE EMAIL AS THE LAST SINGLE ITEM\nfinalOutput.push({\n  json: {\n    type: \"metadata\",\n    email: userEmail\n  }\n});\n\nreturn finalOutput;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2304,
+        368
+      ],
+      "id": "6cc910af-b5bc-4c6e-af97-23b5190cc8ee",
+      "name": "Make the chat model output appropiate"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1392,
+        384
+      ],
+      "id": "db292bf0-2ce7-4d91-a4cd-d018e89df627",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b49f57ae-b6cb-46c3-8ad0-d4ce7f6d68ab",
+              "leftValue": "={{ $json.data.approved }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -880,
+        528
+      ],
+      "id": "186dc15d-2288-4ca3-ab7a-b4c6075d6424",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Loop Over Items').item.json.platform }}",
+                    "rightValue": "LinkedIn",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "52dd4fd7-eed9-4993-9ddf-52079964786f"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "LinkedIn"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "443126a5-894b-47dd-ae97-6a44027a81c3",
+                    "leftValue": "={{ $('Loop Over Items').item.json.platform }}",
+                    "rightValue": "Instagram",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Instagram"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "f8714ead-e927-475f-8f68-7d5550792cf9",
+                    "leftValue": "={{ $('Loop Over Items').item.json.platform }}",
+                    "rightValue": "Twitter",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Twitter"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "c1fe7c09-074e-4d0e-bea5-7b6a122a3a8c",
+                    "leftValue": "={{ $('Loop Over Items').item.json.platform }}",
+                    "rightValue": "Medium",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Medium"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "99ee6f3f-6f63-4173-bfe1-8bdcc5f45d54",
+                    "leftValue": "={{ $('Loop Over Items').item.json.platform }}",
+                    "rightValue": "Facebook",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Facebook"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "abc9afb5-f59b-4e6f-a319-8b958c5cb00f",
+                    "leftValue": "={{ $('Loop Over Items').item.json.platform }}",
+                    "rightValue": "Slack",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Slack"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -576,
+        448
+      ],
+      "id": "f7c905ef-c077-48f6-9c7d-67f9489e9f44",
+      "name": "Switch"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -1984,
+        32
+      ],
+      "id": "edfb29d6-03e5-48c1-8798-6baf5e28039f",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "person": "=",
+        "text": "={{ $('Making Template for post Approval').item.json.post_content }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.linkedIn",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "6757da0e-caa8-4e26-a90d-413180d7324e",
+      "name": "Create a post",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        0,
+        832
+      ],
+      "id": "07488428-bb99-4b7a-aada-b6becbeb53fd",
+      "name": "Facebook Graph API",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.medium",
+      "typeVersion": 1,
+      "position": [
+        0,
+        608
+      ],
+      "id": "6096b8d9-f660-49d5-a289-4bc029cf21c9",
+      "name": "Create a post1",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.twitter",
+      "typeVersion": 2,
+      "position": [
+        0,
+        400
+      ],
+      "id": "51cee863-9371-49cf-a92d-fda8da50e1a8",
+      "name": "Create Tweet",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "resource": "carousel",
+        "carouselMedia": {
+          "mediaItem": []
+        }
+      },
+      "type": "@mookielianhd/n8n-nodes-instagram.instagram",
+      "typeVersion": 1,
+      "position": [
+        0,
+        208
+      ],
+      "id": "64c9d5d1-febc-4d3d-aabf-fc3a8c960e2c",
+      "name": "Publish",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        0,
+        1056
+      ],
+      "id": "ea29dec1-415a-4547-8a3e-8a960eaea61d",
+      "name": "Send a message",
+      "webhookId": "",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "content": "# All the Social Media Platform \n\n## LinkedIn\n## Instagram\n## X (Twitter)\n## Medium\n## Facebook\n## Slack",
+        "height": 1536,
+        "width": 704,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -336,
+        -224
+      ],
+      "id": "73ea9687-f8ed-4722-ad29-b458b97978f3",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "# Send Email for each post and wait for Response ",
+        "height": 704,
+        "width": 544,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -1488,
+        48
+      ],
+      "id": "578c555c-9a95-4519-9662-e551a3d0505b",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "# According to the Input text Generate an Image \n\n",
+        "height": 352,
+        "width": 704,
+        "color": "#AECD13"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -2960,
+        -144
+      ],
+      "id": "bc4210e7-a052-4d93-95ec-7f632149dd08",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "image/png"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_HUGGINGFACE_API_TOKEN"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"inputs\": \"{{ $json.query?.topic || 'AI Automation' }}\",\n  \"parameters\": {\n    \"num_inference_steps\": 5\n  },\n  \"options\": {\n    \"use_cache\": false\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -2848,
+        16
+      ],
+      "id": "d3c56dab-221b-404c-807c-403bdf375ec4",
+      "name": "(Hugging Face) Image generator HTTP Request"
+    },
+    {
+      "parameters": {
+        "name": "={{ $json.query.topic }}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1a22dUdz_MYfESyoMBl7nvNy-yOyhaf1a",
+          "mode": "list",
+          "cachedResultName": "Social Media Automation",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1a22dUdz_MYfESyoMBl7nvNy-yOyhaf1a"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -2480,
+        16
+      ],
+      "id": "a91b056b-bce7-4898-8f5b-c397d607d476",
+      "name": "Backup the Generated Image",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "",
+          "name": "YOUR_GOOGLEDRIVEOAUTH2API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n# Fetch data from approved URLs and automatically generate formatted social media posts, blogs, and content for each platform.\n\n",
+        "height": 592,
+        "width": 880
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -3040,
+        304
+      ],
+      "id": "2a5b138d-c155-4e3f-9897-99cab1a05c70",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "model": "qwen/qwen3-235b-a22b-thinking-2507",
+        "options": {
+          "frequencyPenalty": 1,
+          "maxTokens": 500,
+          "responseFormat": "text",
+          "presencePenalty": 0,
+          "temperature": 0.3,
+          "topP": 0.9
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -2944,
+        560
+      ],
+      "id": "96e7c361-4c23-4c0e-ba93-fdd61e0c5f7a",
+      "name": "OpenRouter (Qwen3-235B)  Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "",
+          "name": "YOUR_OPENROUTERAPI"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# Merge All the Data and make Template\n\n",
+        "height": 608,
+        "width": 496,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -2080,
+        -128
+      ],
+      "id": "987941f5-b81c-4cbc-bba2-c027ba4835d3",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "# Webhook in Listening mood from the approve of the Url content \n\n",
+        "height": 352,
+        "width": 464,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -3552,
+        144
+      ],
+      "id": "179f4919-36e3-4c62-b3d8-57906dff6c8f",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "path": "ab89f0e7-0bd2-4110-a84d-e654f2b0d8c1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -3344,
+        304
+      ],
+      "id": "e61c3821-d6cc-4d90-8f98-b37837486865",
+      "name": "Webhook",
+      "webhookId": ""
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Basic LLM Chain1": {
+      "main": [
+        [
+          {
+            "node": "Message a model1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model1": {
+      "main": [
+        [
+          {
+            "node": "Make the chat model output appropiate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send message and wait for response": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Making Template for post Approval": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Make the chat model output appropiate": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Send message and wait for response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Create a post",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Publish",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Tweet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create a post1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Facebook Graph API",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Making Template for post Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "(Hugging Face) Image generator HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Backup the Generated Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Backup the Generated Image": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter (Qwen3-235B)  Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "(Hugging Face) Image generator HTTP Request",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Basic LLM Chain1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "87f50ca5-5375-4076-9eb9-80b2681d907c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": ""
+  },
+  "id": "8USmaYIhA5w3W4Rj",
+  "tags": []
+}
